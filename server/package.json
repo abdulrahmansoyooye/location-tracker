@@ -1,0 +1,43 @@
+{
+  "name": "real-time-tracker-server",
+  "version": "1.0.0",
+  "description": "Backend service for real-time location tracking using Node.js, Express, Socket.IO, MongoDB, and TypeScript",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon --exec tsx src/index.ts",
+  "build": "tsc",
+  "start": "node dist/index.js",
+    "clean": "dir -rf dist",
+    "lint": "echo \"Add ESLint later\""
+  },
+  "keywords": [
+    "node",
+    "express",
+    "typescript",
+    "socketio",
+    "mongodb",
+    "real-time",
+    "location-tracking"
+  ],
+  "author": "Abdulrahman",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "mongoose": "^8.23.0",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.4.0",
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
