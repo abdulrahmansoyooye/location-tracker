@@ -1,8 +1,8 @@
-import type { Server } from "socket.io"
+import type { Server, Socket } from "socket.io"
 import type { ClientToServerEvents, ServerToClientEvents, StartTripPayload } from "../types/socket.js"
 import { startTrip, stimulateTripMovement } from "../services/trip.service.js"
 type IOServer = Server<ClientToServerEvents,ServerToClientEvents>
-type ClientSocket = Server<ClientToServerEvents,ServerToClientEvents>
+type ClientSocket = Socket<ClientToServerEvents,ServerToClientEvents>
 
 export const initializeTripSocket = (io:IOServer)=>{
     io.on("connection", (socket:ClientSocket) =>{

@@ -1,20 +1,26 @@
 import Trip from "../models/Trip.js";
 import { saveLocation } from "../repositories/location.repository.js";
-import type { Coordinates, TripType, } from "../types/socket.js";
+import type { Coordinates, TripType, ServerToClientEvents } from "../types/socket.js";
 import { generateSteps } from "../utils/movement.js";
+import { Server } from "socket.io";
 
 export const startTrip = async (pickup: Coordinates, drop: Coordinates): Promise<TripType> => {
-    const trip: TripType = await Trip.create({
+    const trip = await Trip.create({
         pickup,
         drop,
         status: "moving"
     })
 
-    return trip
+    return {
+        _id: trip._id.toString(),
+        pickup: trip.pickup as Coordinates,
+        drop: trip.drop as Coordinates,
+        status: trip.status as "moving" | "completed" | "pending"
+    }
 }
 
 
-export const stimulateTripMovement = async (trip: TripType, io: any) => {
+export const stimulateTripMovement = async (trip: TripType, io: Server<any, ServerToClientEvents>) => {
     const path = generateSteps(trip.pickup, trip.drop)
     let index = 0
 
@@ -28,17 +34,24 @@ export const stimulateTripMovement = async (trip: TripType, io: any) => {
             return
         }
 
-      const  location = path[index] 
+      const location = path[index] 
+      
+      if (!location) {
+          clearInterval(interval)
+          return
+      }
 
-        await saveLocation(
-            trip._id,
-            location.lat,
-            location.lng
-        )
+      if (trip._id) {
+          await saveLocation(
+              trip._id,
+              location.lat,
+              location.lng
+          )
+      }
 
         io.emit("driver:move",{
             tripId:trip._id,
-            lat:location?.lat,
+            lat:location.lat,
             lng: location.lng
         })
 
