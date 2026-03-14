@@ -1,0 +1,1 @@
+{"version":3,"file":"trip.socket.d.ts","sourceRoot":"","sources":["../../src/sockets/trip.socket.ts"],"names":[],"mappings":"AAAA,OAAO,KAAK,EAAE,MAAM,EAAU,MAAM,WAAW,CAAA;AAC/C,OAAO,KAAK,EAAE,oBAAoB,EAAE,oBAAoB,EAAoB,MAAM,oBAAoB,CAAA;AAEtG,KAAK,QAAQ,GAAG,MAAM,CAAC,oBAAoB,EAAC,oBAAoB,CAAC,CAAA;AAGjE,eAAO,MAAM,oBAAoB,GAAI,IAAG,QAAQ,SAoB/C,CAAA"}
