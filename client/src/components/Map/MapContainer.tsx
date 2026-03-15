@@ -20,6 +20,12 @@ const MapContainer = () => {
     (state: RootState) => state.trip
   );
 
+  // Use refs to access latest state in event handlers without triggering re-renders of the map initialization
+  const stateRef = useRef({ pickupLocation, dropLocation, status });
+  useEffect(() => {
+    stateRef.current = { pickupLocation, dropLocation, status };
+  }, [pickupLocation, dropLocation, status]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -35,9 +41,16 @@ const MapContainer = () => {
 
       mapRef.current.on('click', (e: L.LeafletMouseEvent) => {
         const { lat, lng } = e.latlng;
-        // In a real app, we'd use status to decide whether to place pickup or drop
-        // For simplicity: if pickup is null, set pickup. Otherwise set drop.
-        // Unless trip has started.
+        
+        // Prevent clicking while trip is in progress
+        const { status, pickupLocation, dropLocation } = stateRef.current;
+        if (status !== 'idle') return;
+
+        if (!pickupLocation) {
+          dispatch(setPickupLocation({ lat, lng }));
+        } else if (!dropLocation) {
+          dispatch(setDropLocation({ lat, lng }));
+        }
       });
     }
 

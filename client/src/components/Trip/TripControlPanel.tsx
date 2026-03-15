@@ -29,15 +29,6 @@ export const TripControlPanel = () => {
     dispatch(resetTrip());
   };
 
-  // Mocking location selection for now - in real app would use map selection
-  const setMockPickup = () => {
-    dispatch(setPickupLocation({ lat: 6.5244, lng: 3.3792 }));
-  };
-
-  const setMockDrop = () => {
-    dispatch(setDropLocation({ lat: 6.6018, lng: 3.3515 }));
-  };
-
   return (
     <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-20">
       <motion.div 
@@ -57,39 +48,31 @@ export const TripControlPanel = () => {
             </div>
           </div>
 
-          {/* Location Inputs */}
+          {/* Location Selection Info */}
           <div className="space-y-3 relative">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 w-0.5 h-1/2 bg-gray-100 z-0" />
-            
-            <button 
-              onClick={setMockPickup}
-              className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200 ${pickupLocation ? 'border-black bg-black/5' : 'border-gray-100 bg-gray-50 hover:bg-gray-100'}`}
-            >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${pickupLocation ? 'bg-black text-white' : 'bg-gray-200 text-gray-500'}`}>
+            <div className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200 ${pickupLocation ? 'border-black bg-black/5' : 'border-dashed border-gray-300 bg-gray-50 animate-pulse'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${pickupLocation ? 'bg-black text-white' : 'bg-gray-200 text-gray-400'}`}>
                 <MapPin size={16} />
               </div>
               <div className="text-left">
                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Pickup Location</p>
                 <p className="text-sm font-semibold truncate w-48">
-                  {pickupLocation ? `${pickupLocation.lat.toFixed(4)}, ${pickupLocation.lng.toFixed(4)}` : 'Set Pickup Point'}
+                  {pickupLocation ? `${pickupLocation.lat.toFixed(4)}, ${pickupLocation.lng.toFixed(4)}` : 'Click map to set pickup'}
                 </p>
               </div>
-            </button>
+            </div>
 
-            <button 
-              onClick={setMockDrop}
-              className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200 ${dropLocation ? 'border-red-500 bg-red-50' : 'border-gray-100 bg-gray-50 hover:bg-gray-100'}`}
-            >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${dropLocation ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
+            <div className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200 ${dropLocation ? 'border-red-500 bg-red-50' : pickupLocation ? 'border-dashed border-gray-300 bg-gray-50 animate-pulse' : 'border-gray-100 bg-gray-50 opacity-50'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${dropLocation ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
                 <Flag size={16} />
               </div>
               <div className="text-left">
                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Drop Location</p>
                 <p className="text-sm font-semibold truncate w-48">
-                  {dropLocation ? `${dropLocation.lat.toFixed(4)}, ${dropLocation.lng.toFixed(4)}` : 'Set Destination'}
+                  {dropLocation ? `${dropLocation.lat.toFixed(4)}, ${dropLocation.lng.toFixed(4)}` : pickupLocation ? 'Click map for destination' : 'Set pickup first'}
                 </p>
               </div>
-            </button>
+            </div>
           </div>
 
           {/* Actions */}

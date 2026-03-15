@@ -1,6 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://location-tracker-11ul.onrender.com';
 
 class SocketService {
   private socket: Socket | null = null;
@@ -27,12 +27,13 @@ class SocketService {
     return this.socket;
   }
 
-  emit(event: string, data: any) {
+  emit(event: string, data: unknown) {
     if (this.socket) {
       this.socket.emit(event, data);
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   on(event: string, callback: (data: any) => void) {
     if (this.socket) {
       this.socket.on(event, callback);
