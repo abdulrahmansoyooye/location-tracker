@@ -22,3 +22,10 @@ export interface TripState {
   isSocketConnected: boolean;
   error: string | null;
 }
+export interface NominatimSuggestion {
+  lat: string;
+  lon: string;
+  display_name: string;
+  place_id: number;
+  type: string;
+}

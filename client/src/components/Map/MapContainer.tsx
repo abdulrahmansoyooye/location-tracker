@@ -187,7 +187,7 @@ const MapContainer = () => {
 
             // Fit bounds to show the whole route
             if (mapRef.current) {
-              const bounds = L.latLngBounds(route.map(p => [p.lat, p.lng]));
+              const bounds = L.latLngBounds(route.map((p: Location) => [p.lat, p.lng]));
               mapRef.current.fitBounds(bounds, { padding: [50, 50] });
             }
           }

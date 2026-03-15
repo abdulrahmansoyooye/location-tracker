@@ -73,7 +73,7 @@ export const TripControlPanel = () => {
     []
   );
 
-  const selectSuggestion = useCallback((suggestion: unknown, type: 'pickup' | 'drop') => {
+  const selectSuggestion = useCallback((suggestion: any, type: 'pickup' | 'drop') => {
     const loc = { lat: parseFloat(suggestion.lat), lng: parseFloat(suggestion.lon) };
     if (type === 'pickup') {
       dispatch(setPickupLocation(loc));
