@@ -22,10 +22,15 @@ export const TripControlPanel = () => {
     (state: RootState) => state.trip
   );
   const [isExpanded, setIsExpanded] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [pickupAddress, setPickupAddress] = useState('');
   const [dropAddress, setDropAddress] = useState('');
   const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([]);
   const [dropSuggestions, setDropSuggestions] = useState<any[]>([]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Reverse geocode when locations change via map click
   useEffect(() => {
@@ -129,9 +134,11 @@ export const TripControlPanel = () => {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${isSocketConnected ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-                {isSocketConnected ? 'Live' : 'Offline'}
-              </div>
+              {mounted && (
+                <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${isSocketConnected ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                  {isSocketConnected ? 'Live' : 'Offline'}
+                </div>
+              )}
               <button 
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="p-1 hover:bg-gray-100 rounded-full transition-colors"
