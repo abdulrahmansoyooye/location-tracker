@@ -10,14 +10,83 @@ import {
   resetTrip 
 } from '@/features/tripSlice';
 import { Button } from '@/components/ui/Button';
-import { MapPin, Navigation, Flag, RotateCcw } from 'lucide-react';
+import { MapPin, Navigation, Flag, RotateCcw, ChevronUp, ChevronDown, Search } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
+import { Input } from '@/components/ui/Input';
+import debounce from 'lodash/debounce';
 
 export const TripControlPanel = () => {
   const dispatch = useDispatch();
-  const { pickupLocation, dropLocation, status, isSocketConnected } = useSelector(
+  const { pickupLocation, dropLocation, status, isSocketConnected, distanceInfo } = useSelector(
     (state: RootState) => state.trip
   );
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [pickupAddress, setPickupAddress] = useState('');
+  const [dropAddress, setDropAddress] = useState('');
+  const [pickupSuggestions, setPickupSuggestions] = useState<any[]>([]);
+  const [dropSuggestions, setDropSuggestions] = useState<any[]>([]);
+
+  // Reverse geocode when locations change via map click
+  useEffect(() => {
+    const fetchAddress = async (loc: any, setter: (val: string) => void) => {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${loc.lat}&lon=${loc.lng}`);
+        const data = await res.json();
+        setter(data.display_name || `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`);
+      } catch (e) {
+        setter(`${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`);
+      }
+    };
+
+    if (pickupLocation && !pickupAddress.includes(pickupLocation.lat.toFixed(4))) {
+      fetchAddress(pickupLocation, setPickupAddress);
+    }
+    if (dropLocation && !dropAddress.includes(dropLocation.lat.toFixed(4))) {
+      fetchAddress(dropLocation, setDropAddress);
+    }
+
+    if (!pickupLocation) setPickupAddress('');
+    if (!dropLocation) setDropAddress('');
+  }, [pickupLocation, dropLocation]);
+
+  // Handle address searches
+  const handleSearch = useCallback(
+    debounce(async (query: string, setSuggestions: (val: any[]) => void) => {
+      if (query.length < 3) {
+        setSuggestions([]);
+        return;
+      }
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=5`);
+        const data = await res.json();
+        setSuggestions(data);
+      } catch (e) {
+        console.error('Search error:', e);
+      }
+    }, 500),
+    []
+  );
+
+  const selectSuggestion = (suggestion: any, type: 'pickup' | 'drop') => {
+    const loc = { lat: parseFloat(suggestion.lat), lng: parseFloat(suggestion.lon) };
+    if (type === 'pickup') {
+      dispatch(setPickupLocation(loc));
+      setPickupAddress(suggestion.display_name);
+      setPickupSuggestions([]);
+    } else {
+      dispatch(setDropLocation(loc));
+      setDropAddress(suggestion.display_name);
+      setDropSuggestions([]);
+    }
+  };
+
+  // Auto-expand when locations are selected or trip starts
+  useEffect(() => {
+    if (pickupLocation || dropLocation || status !== 'idle') {
+      setIsExpanded(true);
+    }
+  }, [pickupLocation, dropLocation, status]);
 
   const handleStartTrip = () => {
     if (pickupLocation && dropLocation) {
@@ -30,50 +99,140 @@ export const TripControlPanel = () => {
   };
 
   return (
-    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-20">
+    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-20">
       <motion.div 
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="bg-white/95 backdrop-blur-xl rounded-4xl shadow-2xl border border-white/20 p-6 overflow-hidden"
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ 
+          y: isExpanded ? 0 : status === 'idle' && !pickupLocation ? 200 : 250, 
+          opacity: 1 
+        }}
+        transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+        className="bg-white/90 backdrop-blur-2xl rounded-[3rem] shadow-[0_-20px_60px_-15px_rgba(0,0,0,0.15)] border border-white/40 overflow-hidden"
       >
-        <div className="space-y-6">
+        {/* Toggle Handle */}
+        <button 
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="w-full pt-3 pb-1 flex justify-center hover:bg-black/5 transition-colors group"
+        >
+          <div className="w-12 h-1.5 bg-gray-200 rounded-full group-hover:bg-gray-300 transition-colors" />
+        </button>
+
+        <div className={`p-6 pt-2 space-y-6 transition-all duration-300 ${!isExpanded ? 'opacity-40 scale-95 origin-top' : 'opacity-100 scale-100'}`}>
           {/* Header */}
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Where to?</h2>
-              <p className="text-sm text-gray-500">Select your ride details</p>
+            <div onClick={() => setIsExpanded(true)} className="cursor-pointer">
+              <h2 className="text-xl font-bold text-gray-900">
+                {status === 'idle' ? 'Where to?' : 'Trip Details'}
+              </h2>
+              <p className="text-sm text-gray-500">
+                {status === 'idle' ? 'Select your ride details' : 'Your ride is in progress'}
+              </p>
             </div>
-            <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${isSocketConnected ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
-              {isSocketConnected ? 'Live' : 'Offline'}
+            <div className="flex items-center gap-2">
+              <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${isSocketConnected ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                {isSocketConnected ? 'Live' : 'Offline'}
+              </div>
+              <button 
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                {isExpanded ? <ChevronDown size={20} className="text-gray-400" /> : <ChevronUp size={20} className="text-gray-400" />}
+              </button>
             </div>
           </div>
 
-          {/* Location Selection Info */}
-          <div className="space-y-3 relative">
-            <div className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200 ${pickupLocation ? 'border-black bg-black/5' : 'border-dashed border-gray-300 bg-gray-50 animate-pulse'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${pickupLocation ? 'bg-black text-white' : 'bg-gray-200 text-gray-400'}`}>
-                <MapPin size={16} />
-              </div>
-              <div className="text-left">
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Pickup Location</p>
-                <p className="text-sm font-semibold truncate w-48">
-                  {pickupLocation ? `${pickupLocation.lat.toFixed(4)}, ${pickupLocation.lng.toFixed(4)}` : 'Click map to set pickup'}
-                </p>
-              </div>
+          {/* Location Selection Inputs */}
+          <div className="space-y-4 relative">
+            {/* Connection line between inputs */}
+            <div className="absolute left-6 top-10 bottom-10 w-0.5 bg-gray-100 z-0" />
+            
+            <div className="relative z-10 space-y-1">
+              <Input 
+                placeholder="Enter pickup location"
+                value={pickupAddress}
+                onChange={(e) => {
+                  setPickupAddress(e.target.value);
+                  handleSearch(e.target.value, setPickupSuggestions);
+                }}
+                icon={<MapPin size={18} className={pickupLocation ? 'text-black' : 'text-gray-400'} />}
+                className={pickupLocation ? 'border-black bg-black/[0.02]' : ''}
+              />
+              <AnimatePresence>
+                {pickupSuggestions.length > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute z-50 w-full bg-white rounded-2xl shadow-xl border border-gray-100 mt-1 max-h-60 overflow-y-auto"
+                  >
+                    {pickupSuggestions.map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => selectSuggestion(s, 'pickup')}
+                        className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors border-b last:border-0 border-gray-50"
+                      >
+                        <Search size={14} className="text-gray-400 shrink-0" />
+                        <span className="truncate">{s.display_name}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
-            <div className={`w-full flex items-center gap-4 p-4 rounded-2xl border transition-all duration-200 ${dropLocation ? 'border-red-500 bg-red-50' : pickupLocation ? 'border-dashed border-gray-300 bg-gray-50 animate-pulse' : 'border-gray-100 bg-gray-50 opacity-50'}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${dropLocation ? 'bg-red-500 text-white' : 'bg-gray-200 text-gray-400'}`}>
-                <Flag size={16} />
-              </div>
-              <div className="text-left">
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">Drop Location</p>
-                <p className="text-sm font-semibold truncate w-48">
-                  {dropLocation ? `${dropLocation.lat.toFixed(4)}, ${dropLocation.lng.toFixed(4)}` : pickupLocation ? 'Click map for destination' : 'Set pickup first'}
-                </p>
-              </div>
+            <div className="relative z-10 space-y-1">
+              <Input 
+                placeholder="Enter drop location"
+                value={dropAddress}
+                disabled={!pickupLocation}
+                onChange={(e) => {
+                  setDropAddress(e.target.value);
+                  handleSearch(e.target.value, setDropSuggestions);
+                }}
+                icon={<Flag size={18} className={dropLocation ? 'text-red-500' : 'text-gray-400'} />}
+                className={dropLocation ? 'border-red-500 bg-red-50/30' : ''}
+              />
+              <AnimatePresence>
+                {dropSuggestions.length > 0 && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute z-50 w-full bg-white rounded-2xl shadow-xl border border-gray-100 mt-1 max-h-60 overflow-y-auto"
+                  >
+                    {dropSuggestions.map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => selectSuggestion(s, 'drop')}
+                        className="w-full px-4 py-3 text-left text-sm hover:bg-gray-50 flex items-center gap-3 transition-colors border-b last:border-0 border-gray-50"
+                      >
+                        <Search size={14} className="text-gray-400 shrink-0" />
+                        <span className="truncate">{s.display_name}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
+
+          {/* Route Info Summary */}
+          {distanceInfo && status === 'idle' && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="flex justify-between items-center px-4 py-3 bg-gray-50 rounded-2xl border border-gray-100"
+            >
+              <div className="flex items-center gap-2">
+                <Navigation size={14} className="text-blue-500" />
+                <span className="text-xs font-bold text-gray-700">{distanceInfo.distanceText}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <RotateCcw size={14} className="text-gray-400" />
+                <span className="text-xs font-bold text-gray-700">{distanceInfo.durationText}</span>
+              </div>
+            </motion.div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-2">
@@ -120,7 +279,7 @@ export const TripControlPanel = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-gray-900">4 min</p>
+                  <p className="text-sm font-bold text-gray-900">{distanceInfo?.durationText || '4 min'}</p>
                   <p className="text-xs text-gray-500">ETA</p>
                 </div>
               </div>

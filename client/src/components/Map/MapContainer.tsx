@@ -5,8 +5,9 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/store/store';
-import { setPickupLocation, setDropLocation } from '@/features/tripSlice';
+import { setPickupLocation, setDropLocation, setRoutePolylines, setDistanceInfo } from '@/features/tripSlice';
 import { Location } from '@/types/trip';
+import { LocateFixed } from 'lucide-react';
 
 const MapContainer = () => {
   const mapRef = useRef<L.Map | null>(null);
@@ -52,6 +53,19 @@ const MapContainer = () => {
           dispatch(setDropLocation({ lat, lng }));
         }
       });
+    }
+
+    // Try to get current location on mount
+    if (!pickupLocation && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          if (mapRef.current) {
+            mapRef.current.setView([latitude, longitude], 15);
+          }
+        },
+        (error) => console.error('Error getting location:', error)
+      );
     }
 
     return () => {
@@ -148,6 +162,54 @@ const MapContainer = () => {
 
   }, [pickupLocation, dropLocation, driverLocation, routePolylines, status]);
 
+  // Fetch Route when both locations are set
+  useEffect(() => {
+    if (pickupLocation && dropLocation && status === 'idle') {
+      const getRoute = async () => {
+        try {
+          const response = await fetch(
+            `https://router.project-osrm.org/route/v1/driving/${pickupLocation.lng},${pickupLocation.lat};${dropLocation.lng},${dropLocation.lat}?overview=full&geometries=geojson`
+          );
+          const data = await response.json();
+          if (data.routes && data.routes.length > 0) {
+            const routeData = data.routes[0];
+            const coordinates = routeData.geometry.coordinates;
+            const route = coordinates.map(([lng, lat]: [number, number]) => ({ lat, lng }));
+            dispatch(setRoutePolylines(route));
+
+            dispatch(setDistanceInfo({
+              distanceValue: routeData.distance,
+              durationValue: routeData.duration,
+              distanceText: `${(routeData.distance / 1000).toFixed(1)} km`,
+              durationText: `${Math.round(routeData.duration / 60)} min`
+            }));
+
+            // Fit bounds to show the whole route
+            if (mapRef.current) {
+              const bounds = L.latLngBounds(route.map(p => [p.lat, p.lng]));
+              mapRef.current.fitBounds(bounds, { padding: [50, 50] });
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching route:', error);
+        }
+      };
+      getRoute();
+    }
+  }, [pickupLocation, dropLocation, status, dispatch]);
+
+  const handleLocateMe = () => {
+    if (navigator.geolocation && mapRef.current) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          mapRef.current?.setView([latitude, longitude], 15);
+        },
+        (error) => console.error('Error getting location:', error)
+      );
+    }
+  };
+
   return (
     <div className="relative w-full h-full">
       <div id="map" className="w-full h-full z-0" />
@@ -158,6 +220,13 @@ const MapContainer = () => {
             <div className={`w-3 h-3 rounded-full animate-pulse ${status === 'moving' ? 'bg-green-500' : 'bg-blue-500'}`} />
           </div>
         </div>
+        
+        <button 
+          onClick={handleLocateMe}
+          className="bg-white/80 backdrop-blur-md p-3 rounded-2xl shadow-xl border border-white/20 hover:bg-white transition-colors group"
+        >
+          <LocateFixed size={20} className="text-gray-600 group-hover:text-black transition-colors" />
+        </button>
       </div>
     </div>
   );
