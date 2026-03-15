@@ -63,6 +63,7 @@ const MapContainer = () => {
           if (mapRef.current) {
             mapRef.current.setView([latitude, longitude], 15);
           }
+          dispatch(setPickupLocation({ lat: latitude, lng: longitude }));
         },
         (error) => console.error('Error getting location:', error)
       );
@@ -204,6 +205,7 @@ const MapContainer = () => {
         (position) => {
           const { latitude, longitude } = position.coords;
           mapRef.current?.setView([latitude, longitude], 15);
+          dispatch(setPickupLocation({ lat: latitude, lng: longitude }));
         },
         (error) => console.error('Error getting location:', error)
       );

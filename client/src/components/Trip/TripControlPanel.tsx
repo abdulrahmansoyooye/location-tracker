@@ -10,9 +10,9 @@ import {
   resetTrip 
 } from '@/features/tripSlice';
 import { Button } from '@/components/ui/Button';
-import { MapPin, Navigation, Flag, RotateCcw, ChevronUp, ChevronDown, Search } from 'lucide-react';
+import { MapPin, Navigation, Flag, RotateCcw, ChevronUp, ChevronDown, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Input } from '@/components/ui/Input';
 import debounce from 'lodash/debounce';
 
@@ -51,8 +51,8 @@ export const TripControlPanel = () => {
   }, [pickupLocation, dropLocation]);
 
   // Handle address searches
-  const handleSearch = useCallback(
-    debounce(async (query: string, setSuggestions: (val: any[]) => void) => {
+  const handleSearch = useMemo(
+    () => debounce(async (query: string, setSuggestions: (val: any[]) => void) => {
       if (query.length < 3) {
         setSuggestions([]);
         return;
@@ -68,7 +68,7 @@ export const TripControlPanel = () => {
     []
   );
 
-  const selectSuggestion = (suggestion: any, type: 'pickup' | 'drop') => {
+  const selectSuggestion = useCallback((suggestion: unknown, type: 'pickup' | 'drop') => {
     const loc = { lat: parseFloat(suggestion.lat), lng: parseFloat(suggestion.lon) };
     if (type === 'pickup') {
       dispatch(setPickupLocation(loc));
@@ -79,7 +79,7 @@ export const TripControlPanel = () => {
       setDropAddress(suggestion.display_name);
       setDropSuggestions([]);
     }
-  };
+  }, [dispatch]);
 
   // Auto-expand when locations are selected or trip starts
   useEffect(() => {
@@ -146,7 +146,7 @@ export const TripControlPanel = () => {
             {/* Connection line between inputs */}
             <div className="absolute left-6 top-10 bottom-10 w-0.5 bg-gray-100 z-0" />
             
-            <div className="relative z-10 space-y-1">
+            <div className="relative z-10 space-y-1 group">
               <Input 
                 placeholder="Enter pickup location"
                 value={pickupAddress}
@@ -155,8 +155,20 @@ export const TripControlPanel = () => {
                   handleSearch(e.target.value, setPickupSuggestions);
                 }}
                 icon={<MapPin size={18} className={pickupLocation ? 'text-black' : 'text-gray-400'} />}
-                className={pickupLocation ? 'border-black bg-black/[0.02]' : ''}
+                className={pickupLocation ? 'border-black bg-black/[0.02] pr-12' : 'pr-12'}
               />
+              {pickupAddress && (
+                <button 
+                  onClick={() => {
+                    setPickupAddress('');
+                    dispatch(setPickupLocation(null));
+                    setPickupSuggestions([]);
+                  }}
+                  className="absolute right-4 top-4 text-gray-400 hover:text-black transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              )}
               <AnimatePresence>
                 {pickupSuggestions.length > 0 && (
                   <motion.div 
@@ -180,7 +192,7 @@ export const TripControlPanel = () => {
               </AnimatePresence>
             </div>
 
-            <div className="relative z-10 space-y-1">
+            <div className="relative z-10 space-y-1 group">
               <Input 
                 placeholder="Enter drop location"
                 value={dropAddress}
@@ -190,8 +202,20 @@ export const TripControlPanel = () => {
                   handleSearch(e.target.value, setDropSuggestions);
                 }}
                 icon={<Flag size={18} className={dropLocation ? 'text-red-500' : 'text-gray-400'} />}
-                className={dropLocation ? 'border-red-500 bg-red-50/30' : ''}
+                className={dropLocation ? 'border-red-500 bg-red-50/30 pr-12' : 'pr-12'}
               />
+              {dropAddress && (
+                <button 
+                  onClick={() => {
+                    setDropAddress('');
+                    dispatch(setDropLocation(null));
+                    setDropSuggestions([]);
+                  }}
+                  className="absolute right-4 top-4 text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              )}
               <AnimatePresence>
                 {dropSuggestions.length > 0 && (
                   <motion.div 
