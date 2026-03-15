@@ -43,7 +43,7 @@ export const TripControlPanel = () => {
       <motion.div 
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-white/95 backdrop-blur-xl rounded-[32px] shadow-2xl border border-white/20 p-6 overflow-hidden"
+        className="bg-white/95 backdrop-blur-xl rounded-4xl shadow-2xl border border-white/20 p-6 overflow-hidden"
       >
         <div className="space-y-6">
           {/* Header */}

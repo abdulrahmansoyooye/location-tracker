@@ -25,20 +25,18 @@ export const socketMiddleware: Middleware = (store) => {
   });
 
   // Handle trip events
-  socket.on('trip:started', (data) => {
+  socket.on('trip:started', (_data) => {
     store.dispatch(setTripStatus('moving'));
-    if (data.driverLocation) {
-      store.dispatch(setDriverLocation(data.driverLocation));
+  });
+
+  socket.on('driver:move', (data) => {
+    if (data.lat && data.lng) {
+      store.dispatch(setDriverLocation({ lat: data.lat, lng: data.lng }));
     }
   });
 
-  socket.on('trip:update', (data) => {
-    if (data.driverLocation) {
-      store.dispatch(setDriverLocation(data.driverLocation));
-    }
-    if (data.status) {
-      store.dispatch(setTripStatus(data.status));
-    }
+  socket.on('trip:end', (_data) => {
+    store.dispatch(setTripStatus('completed'));
   });
 
   return (next) => (action: any) => {
